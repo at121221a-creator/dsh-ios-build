@@ -1,0 +1,62 @@
+name: Build DSH IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - name: Get source
+        run: git clone --recursive https://github.com/everettjf/dsh-ios.git dsh-src
+
+      - name: Tools
+        working-directory: dsh-src
+        run: |
+          brew install meson ninja lld
+          gem install xcodeproj --no-document
+
+      - name: Remove HealthKit entitlement
+        working-directory: dsh-src
+        run: |
+          cat > app/DSH.entitlements <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>get-task-allow</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Build emulator and rootfs
+        working-directory: dsh-src
+        run: |
+          make emulator
+          make rootfs
+
+      - name: Archive unsigned
+        working-directory: dsh-src
+        run: |
+          xcodebuild archive \
+            -project DSH.xcodeproj \
+            -scheme DSH \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath build/DSH.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Pack IPA
+        working-directory: dsh-src
+        run: |
+          mkdir -p ipa/Payload
+          cp -R build/DSH.xcarchive/Products/Applications/DSH.app ipa/Payload/
+          cd ipa && zip -qry DSH-unsigned.ipa Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: DSH-unsigned-ipa
+          path: dsh-src/ipa/DSH-unsigned.ipa
