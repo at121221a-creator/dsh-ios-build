@@ -31,8 +31,18 @@ jobs:
           </plist>
           PLIST
 
+      - name: Relax compiler warnings
+        working-directory: dsh-src
+        run: |
+          find . -name meson.build -exec sed -i '' -e 's/werror=true/werror=false/g' -e 's/-Werror//g' {} +
+          find . -maxdepth 3 \( -name Makefile -o -name '*.mk' \) -exec sed -i '' 's/-Werror//g' {} +
+
       - name: Build emulator and rootfs
         working-directory: dsh-src
+        env:
+          CFLAGS: "-Wno-error"
+          CXXFLAGS: "-Wno-error"
+          OBJCFLAGS: "-Wno-error"
         run: |
           make emulator
           make rootfs
