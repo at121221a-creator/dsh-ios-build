@@ -40,9 +40,9 @@ jobs:
       - name: Build emulator and rootfs
         working-directory: dsh-src
         env:
-          CFLAGS: "-Wno-error"
-          CXXFLAGS: "-Wno-error"
-          OBJCFLAGS: "-Wno-error"
+          CFLAGS: "-Wno-error -Wno-incompatible-function-pointer-types -Wno-error=incompatible-function-pointer-types -Wno-int-conversion -Wno-incompatible-pointer-types"
+          CXXFLAGS: "-Wno-error -Wno-incompatible-function-pointer-types -Wno-error=incompatible-function-pointer-types"
+          OBJCFLAGS: "-Wno-error -Wno-incompatible-function-pointer-types -Wno-error=incompatible-function-pointer-types -Wno-int-conversion"
         run: |
           make emulator
           make rootfs
